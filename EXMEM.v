@@ -37,6 +37,32 @@ module EXMEM (
   output reg        regW_out;
   output reg        memToR_out;
 
+  reg [31:0] BPC_mid;
+  reg [4:0]  gprDes_mid;
+  reg [31:0] aluOut_mid;
+  reg [31:0] gprB_mid;
+  reg        zero_mid;
+  reg        pcSel_mid;
+  reg        memR_mid;
+  reg        memW_mid;
+  reg        regW_mid;
+  reg        memToR_mid;
+
+
+  always @ (negedge clk )
+  begin
+    BPC_mid = BPC_in;
+    gprDes_mid = gprDes_in;
+    alumid_mid = aluOut_in;
+    gprB_mid = gprB_in;
+    zero_mid = zero_in;
+    pcSel_mid = pcSel_in;
+    memR_mid = memR_in;
+    memW_mid = memW_in;
+    regW_mid = regW_in;
+    memToR_mid = memToR_in;
+
+  end
 
   always @(posedge clk or negedge rst)
   begin
@@ -60,16 +86,16 @@ module EXMEM (
 
     else if (Write)
     begin
-      BPC_out = BPC_in;
-      gprDes_out = gprDes_in;
-      aluOut_out = aluOut_in;
-      gprB_out = gprB_in;
-      zero_out = zero_in;
-      pcSel_out = pcSel_in;
-      memR_out = memR_in;
-      memW_out = memW_in;
-      regW_out = regW_in;
-      memToR_out = memToR_in;
+      BPC_out = BPC_mid;
+      gprDes_out = gprDes_mid;
+      aluOut_out = aluOut_mid;
+      gprB_out = gprB_mid;
+      zero_out = zero_mid;
+      pcSel_out = pcSel_mid;
+      memR_out = memR_mid;
+      memW_out = memW_mid;
+      regW_out = regW_mid;
+      memToR_out = memToR_mid;
 
     end // end else
   end //end alway
