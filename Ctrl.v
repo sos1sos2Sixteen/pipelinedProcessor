@@ -1,6 +1,16 @@
 `include "instruction_def.v"
 `include "ctrl_encode_def.v"
 
+HAHAHAH
+THIS IS DEV BRANCH
+I CAN DO WHATEVER I WANT WITH THIS FILE
+I'D DELETE THIS
+AND ADD THIS
+
+I'M TOTALY GOING TO BROKE THIS PROJECT
+
+
+
 module Ctrl(
 	jump,
 	RegDst,
