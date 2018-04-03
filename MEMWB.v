@@ -29,11 +29,14 @@ module MEMWB (
 
 
   always @ ( negedge clk ) begin
-    gprDes_mid = gprDes_in;
-    aluOut_mid = aluOut_in;
-    memOut_mid = memOut_in;
-    regW_mid = regW_in;
-    memToR_mid = memToR_in;
+    if(Write)
+    begin
+      gprDes_mid = gprDes_in;
+      aluOut_mid = aluOut_in;
+      memOut_mid = memOut_in;
+      regW_mid = regW_in;
+      memToR_mid = memToR_in;
+    end
   end
 
 

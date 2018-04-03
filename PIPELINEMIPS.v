@@ -1,4 +1,5 @@
-
+`include "instruction_def.v"
+`include "ctrl_encode_def.v"
 
 module pipeMips (clock,reset);
   input clock;
@@ -16,12 +17,23 @@ module pipeMips (clock,reset);
   wire        WB_ID_gprWrite;
 
 
+  // reg [3:0] pipeBranchClear = 4'b1111;
+  // reg [3:0] pipeBranchLock  = LOCK_PIPELINE_BRANCH;
+  // reg [3:0] pipeNormalClear = CLEAAR_PIPELINE_NONE;
+  // reg [3:0] pipenormalLock  = LOCK_PIPELINE_NONE;
+
+
   //IF
   wire [31:0] IF_pc_im;
   wire [31:0] IF_pc_return;
 
   wire [31:0] IF_pc_next;
   wire [31:0] IF_ir_next;
+
+  wire        IF_ID_clear;
+  wire        IF_ID_lock;
+
+
 
   //ID
   wire [31:0] ID_last_PC;
@@ -49,6 +61,9 @@ module pipeMips (clock,reset);
   wire        ID_RegW_next;
   wire        ID_memToR_next;
 
+  wire        ID_EX_clear;
+  wire        ID_EX_lock;
+
   //EX
   wire [31:0] EX_last_PC;
   wire [31:0] EX_last_ext;
@@ -70,6 +85,9 @@ module pipeMips (clock,reset);
   wire        EX_last_regW;
   wire        EX_last_memToR;
 
+  wire        EX_M_clear;
+  wire        EX_M_lock;
+
   //MEM
   wire        M_last_pcSel;
   wire        M_last_zero;
@@ -81,6 +99,9 @@ module pipeMips (clock,reset);
   wire [4:0]  M_last_gprDes;
   wire        M_last_regW;
   wire        M_last_memToR;
+
+  wire        M_WB_clear;
+  wire        M_WB_lock;
 
   //WB
 
@@ -112,8 +133,8 @@ module pipeMips (clock,reset);
 
   IFID P_IFID(
     .clk(clock),
-    .rst(reset),
-    .Write(pRegWrite),
+    .rst(reset | IF_ID_clear),
+    .Write(pRegWrite & IF_ID_lock),
     .PC_in(IF_pc_return),.PC_out(ID_last_PC),
     .IR_in(IF_ir_next),.IR_out(ID_last_IR)
     );
@@ -165,8 +186,8 @@ module pipeMips (clock,reset);
 
   IDEX P_IDEX(
     .clk(clock),
-    .rst(reset),
-    .Write(pRegWrite),
+    .rst(reset | ID_EX_clear),
+    .Write(pRegWrite & ID_EX_lock),
     .PC_in(ID_last_PC),.PC_out(EX_last_PC),
     .rd_in(ID_rd_gpr),.rd_out(EX_last_rd_mux),
     .rt_in(ID_rt_gpr),.rt_out(EX_last_rt_mux),
@@ -206,8 +227,8 @@ module pipeMips (clock,reset);
 
   EXMEM P_EXMEM(
     .clk(clock),
-    .rst(reset),
-    .Write(pRegWrite),
+    .rst(reset | EX_M_clear),
+    .Write(pRegWrite | EX_M_lock),
     .BPC_in(EX_branchAddr_next),.BPC_out(M_IF_BPC),
     .gprDes_in(EX_muxR_next),.gprDes_out(M_last_gprDes),
     .aluOut_in(EX_aluResult_next),.aluOut_out(M_last_aluResult),
@@ -227,6 +248,14 @@ module pipeMips (clock,reset);
 
   assign M_IF_doBranch = (M_last_zero && M_last_pcSel)?1'b1:1'b0;
 
+  assign PIPELINE_LOCK = M_last_pcSel? LOCK_PIPELINE_BRANCH : LOCK_PIPELINE_NONE;
+  assign PIPELINE_CLEAR= M_last_pcSel? CLEAR_PIPELINE_BRANCH : CLEAAR_PIPELINE_NONE;
+  // assign PIPELINE_LOCK = M_last_pcSel? pipeBranchLock : pipenormalLock;
+  // assign PIPELINE_CLEAR= M_last_pcSel? pipeBranchClear : pipeNormalClear;
+  assign PIPELINE_LOCK = M_last_pcSel? 4'b1111 : 4'b1111;
+  assign PIPELINE_CLEAR= M_last_pcSel? 4'b1111 : 4'b1111;
+
+
   DMem DMEM(
     .DataOut(M_dmResult_next),
     .DataAdr(M_last_aluResult[4:0]),
@@ -238,14 +267,17 @@ module pipeMips (clock,reset);
 
   MEMWB P_MEMWB(
     .clk(clock),
-    .rst(reset),
-    .Write(pRegWrite),
+    .rst(reset | M_WB_clear),
+    .Write(pRegWrite & M_WB_lock),
     .gprDes_in(M_last_gprDes),.gprDes_out(WB_ID_gprWriteAddr),
     .aluOut_in(M_last_aluResult),.aluOut_out(WB_last_aluOut),
     .memOut_in(M_dmResult_next),.memOut_out(WB_last_memOut),
     .regW_in(M_last_regW),.regW_out(WB_ID_gprWrite),
     .memToR_in(M_last_memToR),.memToR_out(WB_last_memToReg)
     );
+
+
+
   // ------END MEM ------------
 
   // --------W B --------------
@@ -255,5 +287,16 @@ module pipeMips (clock,reset);
 
 
   // -----END WB---------------
+
+  // BEYOND PIPELINE
+
+  pipeline_ctrl PIP_CTRL(
+    //TODO: 这个用来控制流水线寄存器锁定和清零
+    //TODO: 现在可以运行beq但是beq并不会清空流水线
+    .clock(clock),
+    .branch()
+    )
+
+  //END BEYONG
 
 endmodule // Mips

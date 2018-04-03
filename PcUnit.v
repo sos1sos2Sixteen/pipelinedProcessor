@@ -7,7 +7,13 @@ module PcUnit(PC,PcReSet,PcSel,nextPC,Clk,branchAddr);
 	input [31:0] nextPC;
 	input [31:0] branchAddr;
 
+	reg [31:0] realBranchAddr;
+
 	output reg[31:0] PC;
+
+	always @ ( negedge Clk ) begin
+		realBranchAddr =branchAddr;
+	end
 
 	always@(posedge Clk or posedge PcReSet)
 	begin
@@ -18,7 +24,7 @@ module PcUnit(PC,PcReSet,PcSel,nextPC,Clk,branchAddr);
 			1'b1:
 			begin
 				$display("[PC:BRANCH]");
-				PC = branchAddr;
+				PC = realBranchAddr;
 			end //end branch
 
 			1'b0:

@@ -51,17 +51,19 @@ module EXMEM (
 
   always @ (negedge clk )
   begin
-    BPC_mid = BPC_in;
-    gprDes_mid = gprDes_in;
-    alumid_mid = aluOut_in;
-    gprB_mid = gprB_in;
-    zero_mid = zero_in;
-    pcSel_mid = pcSel_in;
-    memR_mid = memR_in;
-    memW_mid = memW_in;
-    regW_mid = regW_in;
-    memToR_mid = memToR_in;
-
+    if(Write)
+    begin
+      BPC_mid = BPC_in;
+      gprDes_mid = gprDes_in;
+      aluOut_mid = aluOut_in;
+      gprB_mid = gprB_in;
+      zero_mid = zero_in;
+      pcSel_mid = pcSel_in;
+      memR_mid = memR_in;
+      memW_mid = memW_in;
+      regW_mid = regW_in;
+      memToR_mid = memToR_in;
+    end
   end
 
   always @(posedge clk or negedge rst)
