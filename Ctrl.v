@@ -1,6 +1,10 @@
 `include "instruction_def.v"
 `include "ctrl_encode_def.v"
 
+<<<<<<< HEAD
+=======
+fuck you all little humans
+>>>>>>> e16c89a2f44d532ab9ad57bd1b9888b08352d6cc
 
 module Ctrl(
 	jump,
