@@ -216,20 +216,21 @@ module pipeMips (clock,reset);
   //计算分支的目标
   assign EX_branchAddr_next = EX_last_PC + (EX_last_ext << 2);
   assign EX_muxB_alu = (EX_last_aluSrc_muxB == 1)?
-                        EX_last_ext : EX_last_gprB_muxB;
+                        EX_last_ext : forward_alu_final_in_B;
   assign EX_muxR_next = (EX_last_regDst_muxR == 1)?
                         EX_last_rt_mux : EX_last_rd_mux;
 
   assign forward_alu_final_in_A = (forwardA[1])?
                         M_last_aluResult : EX_last_gprA_alu;
   assign forward_alu_final_in_B = (forwardB[1])?
-                        M_last_aluResult : EX_muxB_alu;
+                        M_last_aluResult : EX_last_gprB_muxB;
+
 
   Alu ALU(
     .AluResult(EX_aluResult_next),
     .Zero(EX_aluZero_next),
     .DataIn1(forward_alu_final_in_A),
-    .DataIn2(forward_alu_final_in_B),
+    .DataIn2(EX_muxB_alu),
     .AluCtrl(EX_aluCtrl_alu)
     );
 

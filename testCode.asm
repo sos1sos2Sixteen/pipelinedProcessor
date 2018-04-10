@@ -4,7 +4,7 @@
 	
 	beq $1 $0 zero
 	lui $3 0xfcab
-	ori $3 $0 0xcabc
+	ori $3 $3 0xcabc
 	nop
 	nop
 	nop
