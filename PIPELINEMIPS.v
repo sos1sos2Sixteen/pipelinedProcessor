@@ -19,6 +19,12 @@ module pipeMips (clock,reset);
   wire [3:0] pipeLock;
   wire [3:0] pipeClear;
 
+  wire [1:0] forwardA;
+  wire [1:0] forwardB;
+
+  wire [31:0] forward_alu_final_in_A;
+  wire [31:0] forward_alu_final_in_B;
+
 
   //IF
   wire [31:0] IF_pc_im;
@@ -75,6 +81,7 @@ module pipeMips (clock,reset);
   wire [4:0]  EX_aluCtrl_alu;
   wire [4:0]  EX_last_rd_mux;
   wire [4:0]  EX_last_rt_mux;
+  wire [4:0]  EX_last_rs_forward;
   wire [4:0]  EX_muxR_next;
   wire        EX_last_pcSel;
   wire        EX_last_memR;
@@ -188,6 +195,7 @@ module pipeMips (clock,reset);
     .PC_in(ID_last_PC),.PC_out(EX_last_PC),
     .rd_in(ID_rd_gpr),.rd_out(EX_last_rd_mux),
     .rt_in(ID_rt_gpr),.rt_out(EX_last_rt_mux),
+    .rs_in(ID_rs_gpr),.rs_out(EX_last_rs_forward),
     .ext_in(ID_extended_next),.ext_out(EX_last_ext),
     .gprA_in(ID_gprA_next),.gprA_out(EX_last_gprA_alu),
     .gprB_in(ID_gprB_next),.gprB_out(EX_last_gprB_muxB),
@@ -212,12 +220,16 @@ module pipeMips (clock,reset);
   assign EX_muxR_next = (EX_last_regDst_muxR == 1)?
                         EX_last_rt_mux : EX_last_rd_mux;
 
+  assign forward_alu_final_in_A = (forwardA[1])?
+                        M_last_aluResult : EX_last_gprA_alu;
+  assign forward_alu_final_in_B = (forwardB[1])?
+                        M_last_aluResult : EX_muxB_alu;
 
   Alu ALU(
     .AluResult(EX_aluResult_next),
     .Zero(EX_aluZero_next),
-    .DataIn1(EX_last_gprA_alu),
-    .DataIn2(EX_muxB_alu),
+    .DataIn1(forward_alu_final_in_A),
+    .DataIn2(forward_alu_final_in_B),
     .AluCtrl(EX_aluCtrl_alu)
     );
 
@@ -306,13 +318,13 @@ module pipeMips (clock,reset);
     );
 
   Forwarding FORWARD(
-    .EX_M_regWrite,
-    .EX_M_rd,
-    .ID_EX_rs,
-    .ID_EX_rt,
-    .forwardA,
-    .forwardB
-    );        //TODO: 将旁路单元连入电路中,测试EX-EX旁路是否解决
+    .EX_M_regWrite(M_last_regW),
+    .EX_M_rd(M_last_gprDes),
+    .ID_EX_rs(EX_last_rs_forward),
+    .ID_EX_rt(EX_last_rt_mux),
+    .forwardA(forwardA),
+    .forwardB(forwardB)
+    );        //TODO: 将旁路单元连入电路中,测试EX-EX旁路是否解决  这里产生了"理论上正确的"控制信号 and it worked
 
   //END BEYONG
 

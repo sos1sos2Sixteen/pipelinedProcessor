@@ -14,17 +14,17 @@ module Forwarding (
   input [4:0] ID_EX_rs;
   input [4:0] ID_EX_rt;
 
-  output forwardA;
-  output forwardB;
+  output [1:0] forwardA;
+  output [1:0] forwardB;
 
   assign forwardA = (EX_M_regWrite &&
                     (EX_M_rd != 0) &&
                     (EX_M_rd == ID_EX_rs)) ?
-                    1 : 0;
+                    2'b10 : 2'b00;
   assign forwardB = (EX_M_regWrite &&
                     (EX_M_rd != 0) &&
                     (EX_M_rd == ID_EX_rt)) ?
-                    1 : 0;
+                    2'b10 : 2'b00;
 
 
 

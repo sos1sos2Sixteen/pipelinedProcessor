@@ -5,6 +5,7 @@ module IDEX (
   PC_in,PC_out,
   rd_in,rd_out,
   rt_in,rt_out,
+  rs_in,rs_out,
   ext_in,ext_out,
   gprA_in,gprA_out,
   gprB_in,gprB_out,
@@ -35,6 +36,10 @@ module IDEX (
   input [4 :0] rt_in;
   reg [4:0] rt_mid;
   output reg  [4 :0] rt_out;
+
+  input [4:0] rs_in;
+  reg [4:0] rs_mid;
+  output reg [4:0] rs_out;
 
   input [31:0] ext_in;
   reg [31:0] ext_mid;
@@ -87,6 +92,7 @@ module IDEX (
       PC_mid = PC_in;
       rd_mid = rd_in;
       rt_mid = rt_in;
+      rs_mid = rs_in;
       gprA_mid = gprA_in;
       gprB_mid = gprB_in;
       RegDst_mid = RegDst_in;
@@ -109,6 +115,7 @@ module IDEX (
       PC_out = 0;
       rd_out = 0;
       rt_out = 0;
+      rs_out = 0;
       ext_out = 0;
       gprA_out = 0;
       gprB_out = 0;
@@ -124,6 +131,7 @@ module IDEX (
       PC_mid = 0;
       rd_mid = 0;
       rt_mid = 0;
+      rs_mid = 0;
       ext_mid = 0;
       gprA_mid = 0;
       gprB_mid = 0;
@@ -143,6 +151,7 @@ module IDEX (
       PC_out = PC_mid;
       rd_out = rd_mid;
       rt_out = rt_mid;
+      rs_out = rs_in;
       gprA_out = gprA_mid;
       gprB_out = gprB_mid;
       RegDst_out = RegDst_mid;
