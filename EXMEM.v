@@ -66,7 +66,13 @@ module EXMEM (
     end
   end
 
-  always @(posedge clk or negedge rst)
+  // always @ ( posedge rst ) begin
+  //
+  //
+  // end
+
+
+  always @(posedge clk or posedge rst)
   begin
 
     if (rst)
@@ -83,6 +89,16 @@ module EXMEM (
       memW_out = 0;
       regW_out = 0;
       memToR_out = 0;
+      BPC_mid = 0;
+      gprDes_mid = 0;
+      aluOut_mid = 0;
+      gprB_mid = 0;
+      zero_mid = 0;
+      pcSel_mid = 0;
+      memR_mid = 0;
+      memW_mid = 0;
+      regW_mid = 0;
+      memToR_mid = 0;
 
     end //end if
 

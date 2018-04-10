@@ -25,13 +25,15 @@ module IFID (
     end //end if
   end
 
-  always @(posedge clk or negedge rst)
+  always @(posedge clk or posedge rst)
   begin
     if (rst)
     begin
       $display("[IF/ID flush]");
       PC_out = 0;
       IR_out = 0;
+      PC_mid = 0;
+      IR_mid = 0;
     end //end if
 
     else if(Write)

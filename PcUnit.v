@@ -12,7 +12,7 @@ module PcUnit(PC,PcReSet,PcSel,nextPC,Clk,branchAddr);
 	output reg[31:0] PC;
 
 	always @ ( negedge Clk ) begin
-		realBranchAddr =branchAddr;
+		realBranchAddr = branchAddr;
 	end
 
 	always@(posedge Clk or posedge PcReSet)

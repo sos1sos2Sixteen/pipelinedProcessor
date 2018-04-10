@@ -41,7 +41,7 @@ module MEMWB (
 
 
 
-  always @(posedge clk or negedge rst)
+  always @(posedge clk or posedge rst)
   begin
 
     if (rst)
@@ -53,6 +53,12 @@ module MEMWB (
       memOut_out = 0;
       regW_out = 0;
       memToR_out = 0;
+
+      gprDes_mid = 0;
+      aluOut_mid = 0;
+      memOut_mid = 0;
+      regW_mid = 0;
+      memToR_mid = 0;
 
     end //end if
 

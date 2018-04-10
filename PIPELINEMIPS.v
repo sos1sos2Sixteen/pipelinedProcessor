@@ -16,11 +16,8 @@ module pipeMips (clock,reset);
   wire [4:0]  WB_ID_gprWriteAddr;
   wire        WB_ID_gprWrite;
 
-
-  // reg [3:0] pipeBranchClear = 4'b1111;
-  // reg [3:0] pipeBranchLock  = LOCK_PIPELINE_BRANCH;
-  // reg [3:0] pipeNormalClear = CLEAAR_PIPELINE_NONE;
-  // reg [3:0] pipenormalLock  = LOCK_PIPELINE_NONE;
+  wire [3:0] pipeLock;
+  wire [3:0] pipeClear;
 
 
   //IF
@@ -228,7 +225,7 @@ module pipeMips (clock,reset);
   EXMEM P_EXMEM(
     .clk(clock),
     .rst(reset | EX_M_clear),
-    .Write(pRegWrite | EX_M_lock),
+    .Write(pRegWrite & EX_M_lock),
     .BPC_in(EX_branchAddr_next),.BPC_out(M_IF_BPC),
     .gprDes_in(EX_muxR_next),.gprDes_out(M_last_gprDes),
     .aluOut_in(EX_aluResult_next),.aluOut_out(M_last_aluResult),
@@ -248,12 +245,12 @@ module pipeMips (clock,reset);
 
   assign M_IF_doBranch = (M_last_zero && M_last_pcSel)?1'b1:1'b0;
 
-  assign PIPELINE_LOCK = M_last_pcSel? LOCK_PIPELINE_BRANCH : LOCK_PIPELINE_NONE;
-  assign PIPELINE_CLEAR= M_last_pcSel? CLEAR_PIPELINE_BRANCH : CLEAAR_PIPELINE_NONE;
-  // assign PIPELINE_LOCK = M_last_pcSel? pipeBranchLock : pipenormalLock;
-  // assign PIPELINE_CLEAR= M_last_pcSel? pipeBranchClear : pipeNormalClear;
-  assign PIPELINE_LOCK = M_last_pcSel? 4'b1111 : 4'b1111;
-  assign PIPELINE_CLEAR= M_last_pcSel? 4'b1111 : 4'b1111;
+  // assign PIPELINE_LOCK = M_last_pcSel? LOCK_PIPELINE_BRANCH : LOCK_PIPELINE_NONE;
+  // assign PIPELINE_CLEAR= M_last_pcSel? CLEAR_PIPELINE_BRANCH : CLEAAR_PIPELINE_NONE;
+  // // assign PIPELINE_LOCK = M_last_pcSel? pipeBranchLock : pipenormalLock;
+  // // assign PIPELINE_CLEAR= M_last_pcSel? pipeBranchClear : pipeNormalClear;
+  // assign PIPELINE_LOCK = M_last_pcSel? 4'b1111 : 4'b1111;
+  // assign PIPELINE_CLEAR= M_last_pcSel? 4'b1111 : 4'b1111;
 
 
   DMem DMEM(
@@ -289,13 +286,33 @@ module pipeMips (clock,reset);
   // -----END WB---------------
 
   // BEYOND PIPELINE
+  assign IF_ID_lock = pipeLock[0];
+  assign ID_EX_lock = pipeLock[1];
+  assign EX_M_lock  = pipeLock[2];
+  assign M_WB_lock  = pipeLock[3];
+
+  assign IF_ID_clear =  pipeClear[0];
+  assign ID_EX_clear =  pipeClear[1];
+  assign EX_M_clear  =  pipeClear[2];
+  assign M_WB_clear  =  pipeClear[3];
 
   pipeline_ctrl PIP_CTRL(
     //TODO: 这个用来控制流水线寄存器锁定和清零
     //TODO: 现在可以运行beq但是beq并不会清空流水线
     .clock(clock),
-    .branch()
-    )
+    .branch(M_IF_doBranch),
+    .pipeline_lock(pipeLock),
+    .pipeline_clear(pipeClear)
+    );
+
+  Forwarding FORWARD(
+    .EX_M_regWrite,
+    .EX_M_rd,
+    .ID_EX_rs,
+    .ID_EX_rt,
+    .forwardA,
+    .forwardB
+    );        //TODO: 将旁路单元连入电路中,测试EX-EX旁路是否解决
 
   //END BEYONG
 

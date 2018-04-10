@@ -101,7 +101,7 @@ module IDEX (
     end
   end
 
-  always @(posedge clk or negedge rst)
+  always @(posedge clk or posedge rst)
   begin
     if (rst)
     begin
@@ -120,6 +120,21 @@ module IDEX (
       Mread_out = 0;
       RegWrite_out = 0;
       MtoR_out = 0;
+
+      PC_mid = 0;
+      rd_mid = 0;
+      rt_mid = 0;
+      ext_mid = 0;
+      gprA_mid = 0;
+      gprB_mid = 0;
+      RegDst_mid = 0;
+      ALUop_mid = 0;
+      ALUsrc_mid = 0;
+      Branch_mid = 0;
+      Mwrite_mid = 0;
+      Mread_mid = 0;
+      RegWrite_mid = 0;
+      MtoR_mid = 0;
     end //end if
 
     else if(Write)

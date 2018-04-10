@@ -1,6 +1,7 @@
-	ori $1 $0 0x0
+	ori $1 $0 0x234
 	nop
 	nop
+	
 	beq $1 $0 zero
 	lui $3 0xfcab
 	ori $3 $0 0xcabc
