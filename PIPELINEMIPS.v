@@ -220,10 +220,16 @@ module pipeMips (clock,reset);
   assign EX_muxR_next = (EX_last_regDst_muxR == 1)?
                         EX_last_rt_mux : EX_last_rd_mux;
 
+  // assign forward_alu_final_in_A = (forwardA[1])?
+  //                       M_last_aluResult : EX_last_gprA_alu;
+  // assign forward_alu_final_in_B = (forwardB[1])?
+  //                       M_last_aluResult : EX_last_gprB_muxB;
+
   assign forward_alu_final_in_A = (forwardA[1])?
-                        M_last_aluResult : EX_last_gprA_alu;
+          ((forwardA[0])?WB_ID_writeBack:M_last_aluResult): EX_last_gprA_alu;
   assign forward_alu_final_in_B = (forwardB[1])?
-                        M_last_aluResult : EX_last_gprB_muxB;
+          ((forwardB[0])?WB_ID_writeBack:M_last_aluResult) : EX_last_gprB_muxB;
+
 
 
   Alu ALU(
@@ -257,13 +263,6 @@ module pipeMips (clock,reset);
   // --------M E M-------------
 
   assign M_IF_doBranch = (M_last_zero && M_last_pcSel)?1'b1:1'b0;
-
-  // assign PIPELINE_LOCK = M_last_pcSel? LOCK_PIPELINE_BRANCH : LOCK_PIPELINE_NONE;
-  // assign PIPELINE_CLEAR= M_last_pcSel? CLEAR_PIPELINE_BRANCH : CLEAAR_PIPELINE_NONE;
-  // // assign PIPELINE_LOCK = M_last_pcSel? pipeBranchLock : pipenormalLock;
-  // // assign PIPELINE_CLEAR= M_last_pcSel? pipeBranchClear : pipeNormalClear;
-  // assign PIPELINE_LOCK = M_last_pcSel? 4'b1111 : 4'b1111;
-  // assign PIPELINE_CLEAR= M_last_pcSel? 4'b1111 : 4'b1111;
 
 
   DMem DMEM(
@@ -323,6 +322,8 @@ module pipeMips (clock,reset);
     .EX_M_rd(M_last_gprDes),
     .ID_EX_rs(EX_last_rs_forward),
     .ID_EX_rt(EX_last_rt_mux),
+    .M_WB_regWrite(WB_ID_gprWrite),
+    .M_WB_rd(WB_ID_gprWriteAddr),
     .forwardA(forwardA),
     .forwardB(forwardB)
     );        //TODO: 将旁路单元连入电路中,测试EX-EX旁路是否解决  这里产生了"理论上正确的"控制信号 and it worked
