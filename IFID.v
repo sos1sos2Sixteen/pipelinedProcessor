@@ -3,11 +3,17 @@ module IFID (
   Write,
   PC_in,PC_out,
   IR_in,IR_out,
+  do_stall,
+  // do_flush
   );
+
+
 
   input clk;
   input rst;
   input Write;
+  input do_stall;
+  // input do_flush;
   input [31:0] PC_in;
   input [31:0] IR_in;
 
@@ -17,8 +23,16 @@ module IFID (
   output reg [31:0] PC_out;
   output reg [31:0] IR_out;
 
+
   always @ ( negedge clk ) begin
-    if(Write)
+    if(do_stall)
+    begin
+      PC_mid = 0;
+      IR_mid = 0;
+    end
+
+
+    else if(Write)
     begin
       PC_mid = PC_in;
       IR_mid = IR_in;

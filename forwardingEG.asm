@@ -3,11 +3,16 @@
 	ori $2 $1 0xeeee
 	lui $3 0xecef
 	nop
-	ori $4 $3 0xdfdf
+	nop
+	bne $0 $1 zero
+	ori $10 $0 0xcccc
+	ori $8 $0 0x1111
+	addu $10 $8 $2
 	nop
 	nop
-	sw $4 0($0)
-	lw $11 0($0)
+zero:	lui $15 0xf000
+	ori $15 $15 0xcccc
+	sra $15 $15 5
 	nop
 	nop
 	nop

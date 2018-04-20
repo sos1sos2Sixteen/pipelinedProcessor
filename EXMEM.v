@@ -7,6 +7,7 @@ module EXMEM (
   gprB_in,gprB_out,
   zero_in,zero_out,
   pcSel_in,pcSel_out,
+  nbranch_in,nbranch_out,
   memR_in,memR_out,
   memW_in,memW_out,
   regW_in,regW_out,
@@ -21,6 +22,7 @@ module EXMEM (
   input [31:0] gprB_in;
   input        zero_in;
   input        pcSel_in;
+  input        nbranch_in;
   input        memR_in;
   input        memW_in;
   input        regW_in;
@@ -32,6 +34,7 @@ module EXMEM (
   output reg [31:0] gprB_out;
   output reg        zero_out;
   output reg        pcSel_out;
+  output reg        nbranch_out;
   output reg        memR_out;
   output reg        memW_out;
   output reg        regW_out;
@@ -43,6 +46,7 @@ module EXMEM (
   reg [31:0] gprB_mid;
   reg        zero_mid;
   reg        pcSel_mid;
+  reg        nbranch_mid;
   reg        memR_mid;
   reg        memW_mid;
   reg        regW_mid;
@@ -59,6 +63,7 @@ module EXMEM (
       gprB_mid = gprB_in;
       zero_mid = zero_in;
       pcSel_mid = pcSel_in;
+      nbranch_mid = nbranch_in;
       memR_mid = memR_in;
       memW_mid = memW_in;
       regW_mid = regW_in;
@@ -85,6 +90,7 @@ module EXMEM (
       gprB_out = 0;
       zero_out = 0;
       pcSel_out = 0;
+      nbranch_out = 0;
       memR_out = 0;
       memW_out = 0;
       regW_out = 0;
@@ -95,6 +101,7 @@ module EXMEM (
       gprB_mid = 0;
       zero_mid = 0;
       pcSel_mid = 0;
+      nbranch_mid = 0;
       memR_mid = 0;
       memW_mid = 0;
       regW_mid = 0;
@@ -110,6 +117,7 @@ module EXMEM (
       gprB_out = gprB_mid;
       zero_out = zero_mid;
       pcSel_out = pcSel_mid;
+      nbranch_out = nbranch_mid;
       memR_out = memR_mid;
       memW_out = memW_mid;
       regW_out = regW_mid;

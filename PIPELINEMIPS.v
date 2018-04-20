@@ -25,6 +25,8 @@ module pipeMips (clock,reset);
   wire [31:0] forward_alu_final_in_A;
   wire [31:0] forward_alu_final_in_B;
 
+  wire        STALL_do_stall;
+
 
   //IF
   wire [31:0] IF_pc_im;
@@ -43,7 +45,7 @@ module pipeMips (clock,reset);
   wire [31:0] ID_last_IR;
   wire [5:0]  ID_opcode_ctrl;
   wire [5:0]  ID_funct_ctrl;
-  wire [5:0]  ID_shamt_next;       //TODO: shamt out of question
+  wire [4:0]  ID_shamt_next;
   wire [4:0]  ID_rs_gpr;
   wire [4:0]  ID_rt_gpr;
   wire [4:0]  ID_rd_gpr;
@@ -58,6 +60,8 @@ module pipeMips (clock,reset);
   wire        ID_regDst_next;
   wire [4:0]  ID_aluCtrl_next;
   wire        ID_aluSrc_next;
+  wire        ID_aluShift_next;
+  wire        ID_nbranch_next;
   wire        ID_pcSel_next;
   wire        ID_memR_next;
   wire        ID_memW_next;
@@ -66,8 +70,12 @@ module pipeMips (clock,reset);
 
   wire        ID_EX_clear;
   wire        ID_EX_lock;
+  wire [31:0] ID_IF_jumpAddr;
+  wire        ID_PC_jump;
 
   //EX
+  wire [4:0]  EX_last_shamt;
+  wire        EX_last_aluShift;
   wire [31:0] EX_last_PC;
   wire [31:0] EX_last_ext;
   wire [31:0] EX_branchAddr_next;
@@ -84,6 +92,7 @@ module pipeMips (clock,reset);
   wire [4:0]  EX_last_rs_forward;
   wire [4:0]  EX_muxR_next;
   wire        EX_last_pcSel;
+  wire        EX_last_nbranch;
   wire        EX_last_memR;
   wire        EX_last_memW;
   wire        EX_last_regW;
@@ -94,6 +103,7 @@ module pipeMips (clock,reset);
 
   //MEM
   wire        M_last_pcSel;
+  wire        M_last_nbranch;
   wire        M_last_zero;
   wire [31:0] M_dmResult_next;
   wire [31:0] M_last_aluResult;
@@ -124,8 +134,11 @@ module pipeMips (clock,reset);
     .PcReSet(reset),
     .PC(IF_pc_im),
     .PcSel(M_IF_doBranch),
+    .dojump(ID_PC_jump),
     .nextPC(IF_pc_return),
-    .branchAddr(M_IF_BPC)
+    .branchAddr(M_IF_BPC),
+    .jumpAddr(ID_IF_jumpAddr),
+    .do_stall(STALL_do_stall)
     );
 
   assign IF_pc_return = IF_pc_im + 4;
@@ -135,12 +148,14 @@ module pipeMips (clock,reset);
     .ImAdress(IF_pc_im[6:2])
     );
 
+  wire a = STALL_do_stall | ID_PC_jump;
   IFID P_IFID(
     .clk(clock),
     .rst(reset | IF_ID_clear),
     .Write(pRegWrite & IF_ID_lock),
     .PC_in(IF_pc_return),.PC_out(ID_last_PC),
-    .IR_in(IF_ir_next),.IR_out(ID_last_IR)
+    .IR_in(IF_ir_next),.IR_out(ID_last_IR),
+    .do_stall(a)
     );
   // -------END IF------------
 
@@ -153,6 +168,11 @@ module pipeMips (clock,reset);
   assign ID_rt_gpr      = ID_last_IR[20:16];
   assign ID_rd_gpr      = ID_last_IR[15:11];
   assign ID_imm_ext     = ID_last_IR[15:0];
+
+  //形成jump指令的目标地址
+  assign ID_IF_jumpAddr = {ID_last_PC[31:28],
+                           ID_last_IR[25:0],
+                           2'b00};
 
   GPR P_GPR(
     .DataOut1(ID_gprA_next),
@@ -172,16 +192,16 @@ module pipeMips (clock,reset);
     );
 
   Ctrl ELOHIM(
-    .jump(),                    //TODO: reserved for jump
+    .jump(ID_PC_jump),
     .RegDst(ID_regDst_next),
     .Branch(ID_pcSel_next),
-    .NBranch(),                 //TODO: reserved for bne
+    .NBranch(ID_nbranch_next),                 //TODO: reserved for bne
     .MemR(ID_memR_next),
     .Mem2R(ID_memToR_next),
     .MemW(ID_memW_next),
     .RegW(ID_RegW_next),
     .Alusrc(ID_aluSrc_next),
-    .AluShift(),                //TODO: reserved for shifts
+    .AluShift(ID_aluShift_next),
     .ExtOp(ID_extop_ext),
     .Aluctrl(ID_aluCtrl_next),
     .OpCode(ID_opcode_ctrl),
@@ -197,16 +217,20 @@ module pipeMips (clock,reset);
     .rt_in(ID_rt_gpr),.rt_out(EX_last_rt_mux),
     .rs_in(ID_rs_gpr),.rs_out(EX_last_rs_forward),
     .ext_in(ID_extended_next),.ext_out(EX_last_ext),
+    .shamt_in(ID_shamt_next),.shamt_out(EX_last_shamt),
     .gprA_in(ID_gprA_next),.gprA_out(EX_last_gprA_alu),
     .gprB_in(ID_gprB_next),.gprB_out(EX_last_gprB_muxB),
     .RegDst_in(ID_regDst_next),.RegDst_out(EX_last_regDst_muxR),
     .ALUop_in(ID_aluCtrl_next),.ALUop_out(EX_aluCtrl_alu),
     .ALUsrc_in(ID_aluSrc_next),.ALUsrc_out(EX_last_aluSrc_muxB),
+    .AluShift_in(ID_aluShift_next),.AluShift_out(EX_last_aluShift),
     .Branch_in(ID_pcSel_next),.Branch_out(EX_last_pcSel),
+    .nbranch_in(ID_nbranch_next),.nbranch_out(EX_last_nbranch),
     .Mwrite_in(ID_memW_next),.Mwrite_out(EX_last_memW),
     .Mread_in(ID_memR_next),.Mread_out(EX_last_memR),
     .RegWrite_in(ID_RegW_next),.RegWrite_out(EX_last_regW),
-    .MtoR_in(ID_memToR_next),.MtoR_out(EX_last_memToR)
+    .MtoR_in(ID_memToR_next),.MtoR_out(EX_last_memToR),
+    .do_stall(STALL_do_stall)
     );
 
   // -------END ID------------
@@ -215,6 +239,7 @@ module pipeMips (clock,reset);
 
   //计算分支的目标
   assign EX_branchAddr_next = EX_last_PC + (EX_last_ext << 2);
+
   assign EX_muxB_alu = (EX_last_aluSrc_muxB == 1)?
                         EX_last_ext : forward_alu_final_in_B;
   assign EX_muxR_next = (EX_last_regDst_muxR == 1)?
@@ -225,10 +250,10 @@ module pipeMips (clock,reset);
   // assign forward_alu_final_in_B = (forwardB[1])?
   //                       M_last_aluResult : EX_last_gprB_muxB;
 
-  assign forward_alu_final_in_A = (forwardA[1])?
-          ((forwardA[0])?WB_ID_writeBack:M_last_aluResult): EX_last_gprA_alu;
-  assign forward_alu_final_in_B = (forwardB[1])?
-          ((forwardB[0])?WB_ID_writeBack:M_last_aluResult) : EX_last_gprB_muxB;
+  assign forward_alu_final_in_A = (forwardA[1]==1)?
+          ((forwardA[0]==1)?WB_ID_writeBack:M_last_aluResult): ((EX_last_aluShift)?{27'b0,EX_last_shamt}:EX_last_gprA_alu);
+  assign forward_alu_final_in_B = (forwardB[1]==1)?
+          ((forwardB[0]==1)?WB_ID_writeBack:M_last_aluResult) : EX_last_gprB_muxB;
 
 
 
@@ -251,6 +276,7 @@ module pipeMips (clock,reset);
     .gprB_in(EX_last_gprB_muxB),.gprB_out(M_last_gprB),
     .zero_in(EX_aluZero_next),.zero_out(M_last_zero),
     .pcSel_in(EX_last_pcSel),.pcSel_out(M_last_pcSel),
+    .nbranch_in(EX_last_nbranch),.nbranch_out(M_last_nbranch),
     .memR_in(EX_last_memR),.memR_out(M_last_memR),
     .memW_in(EX_last_memW),.memW_out(M_last_memW),
     .regW_in(EX_last_regW),.regW_out(M_last_regW),
@@ -262,7 +288,9 @@ module pipeMips (clock,reset);
 
   // --------M E M-------------
 
-  assign M_IF_doBranch = (M_last_zero && M_last_pcSel)?1'b1:1'b0;
+  assign M_IF_doBranch = (M_last_zero && M_last_pcSel)?
+                    1'b1:((~M_last_zero && M_last_nbranch)?
+                    1'b1:1'b0);
 
 
   DMem DMEM(
@@ -309,12 +337,11 @@ module pipeMips (clock,reset);
   assign M_WB_clear  =  pipeClear[3];
 
   pipeline_ctrl PIP_CTRL(
-    //TODO: 这个用来控制流水线寄存器锁定和清零
-    //TODO: 现在可以运行beq但是beq并不会清空流水线
-    .clock(clock),
     .branch(M_IF_doBranch),
+    .jump(ID_PC_jump),
     .pipeline_lock(pipeLock),
-    .pipeline_clear(pipeClear)
+    .pipeline_clear(pipeClear),
+    .do_stall(STALL_do_stall)
     );
 
   Forwarding FORWARD(
@@ -327,6 +354,16 @@ module pipeMips (clock,reset);
     .forwardA(forwardA),
     .forwardB(forwardB)
     );        //TODO: 将旁路单元连入电路中,测试EX-EX旁路是否解决  这里产生了"理论上正确的"控制信号 and it worked
+
+
+  //阻塞检测
+  Stall STALL(
+    .ID_EX_memRead(EX_last_memR),
+    .ID_EX_rt(EX_last_rt_mux),
+    .IF_ID_rs(ID_rs_gpr),
+    .IF_ID_rt(ID_rt_gpr),
+    .do_stall(STALL_do_stall)
+    );
 
   //END BEYONG
 

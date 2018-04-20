@@ -21,7 +21,7 @@
       clk = 1 ;
       rst = 0 ;
       #5 rst = 1 ;
-      #20 rst = 0 ;
+      #10 rst = 0 ;
 
       $dumpfile("dff.vcd");
       $dumpvars;
