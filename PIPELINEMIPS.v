@@ -1,5 +1,6 @@
 `include "instruction_def.v"
 `include "ctrl_encode_def.v"
+`timescale 1ns/100ps
 
 module pipeMips (clock,reset);
   input clock;
@@ -16,16 +17,17 @@ module pipeMips (clock,reset);
   wire [4:0]  WB_ID_gprWriteAddr;
   wire        WB_ID_gprWrite;
 
-  wire [3:0] pipeLock;
-  wire [3:0] pipeClear;
 
-  wire [1:0] forwardA;
-  wire [1:0] forwardB;
+  wire [1:0]  forwardA;
+  wire [1:0]  forwardB;
 
   wire [31:0] forward_alu_final_in_A;
   wire [31:0] forward_alu_final_in_B;
 
   wire        STALL_do_stall;
+
+  wire [2:0]  CTRL_flush;
+  wire [2:0]  CTRL_stall;
 
 
   //IF
@@ -35,8 +37,6 @@ module pipeMips (clock,reset);
   wire [31:0] IF_pc_next;
   wire [31:0] IF_ir_next;
 
-  wire        IF_ID_clear;
-  wire        IF_ID_lock;
 
 
 
@@ -68,8 +68,6 @@ module pipeMips (clock,reset);
   wire        ID_RegW_next;
   wire        ID_memToR_next;
 
-  wire        ID_EX_clear;
-  wire        ID_EX_lock;
   wire [31:0] ID_IF_jumpAddr;
   wire        ID_PC_jump;
 
@@ -98,8 +96,6 @@ module pipeMips (clock,reset);
   wire        EX_last_regW;
   wire        EX_last_memToR;
 
-  wire        EX_M_clear;
-  wire        EX_M_lock;
 
   //MEM
   wire        M_last_pcSel;
@@ -114,8 +110,6 @@ module pipeMips (clock,reset);
   wire        M_last_regW;
   wire        M_last_memToR;
 
-  wire        M_WB_clear;
-  wire        M_WB_lock;
 
   //WB
 
@@ -129,6 +123,7 @@ module pipeMips (clock,reset);
 
 
   // ----------I F------------
+  wire PC_staller = STALL_do_stall||ID_pcSel_next||ID_nbranch_next||EX_last_pcSel||EX_last_nbranch;
   PcUnit PC_UNIT(
     .Clk(clock),
     .PcReSet(reset),
@@ -138,7 +133,7 @@ module pipeMips (clock,reset);
     .nextPC(IF_pc_return),
     .branchAddr(M_IF_BPC),
     .jumpAddr(ID_IF_jumpAddr),
-    .do_stall(STALL_do_stall)
+    .do_stall(PC_staller)
     );
 
   assign IF_pc_return = IF_pc_im + 4;
@@ -148,14 +143,15 @@ module pipeMips (clock,reset);
     .ImAdress(IF_pc_im[6:2])
     );
 
-  wire a = STALL_do_stall | ID_PC_jump;
+  wire IFID_flusher = ID_PC_jump||M_IF_doBranch||ID_pcSel_next||ID_nbranch_next||EX_last_pcSel||EX_last_nbranch;
   IFID P_IFID(
     .clk(clock),
-    .rst(reset | IF_ID_clear),
-    .Write(pRegWrite & IF_ID_lock),
+    .rst(reset),
+    .Write(pRegWrite),
     .PC_in(IF_pc_return),.PC_out(ID_last_PC),
     .IR_in(IF_ir_next),.IR_out(ID_last_IR),
-    .do_stall(a)
+    .do_stall(STALL_do_stall),
+    .do_flush(IFID_flusher)
     );
   // -------END IF------------
 
@@ -210,8 +206,8 @@ module pipeMips (clock,reset);
 
   IDEX P_IDEX(
     .clk(clock),
-    .rst(reset | ID_EX_clear),
-    .Write(pRegWrite & ID_EX_lock),
+    .rst(reset),
+    .Write(pRegWrite),
     .PC_in(ID_last_PC),.PC_out(EX_last_PC),
     .rd_in(ID_rd_gpr),.rd_out(EX_last_rd_mux),
     .rt_in(ID_rt_gpr),.rt_out(EX_last_rt_mux),
@@ -230,7 +226,7 @@ module pipeMips (clock,reset);
     .Mread_in(ID_memR_next),.Mread_out(EX_last_memR),
     .RegWrite_in(ID_RegW_next),.RegWrite_out(EX_last_regW),
     .MtoR_in(ID_memToR_next),.MtoR_out(EX_last_memToR),
-    .do_stall(STALL_do_stall)
+    .do_flush(STALL_do_stall)
     );
 
   // -------END ID------------
@@ -268,19 +264,20 @@ module pipeMips (clock,reset);
 
   EXMEM P_EXMEM(
     .clk(clock),
-    .rst(reset | EX_M_clear),
-    .Write(pRegWrite & EX_M_lock),
+    .rst(reset),
+    .Write(pRegWrite),
     .BPC_in(EX_branchAddr_next),.BPC_out(M_IF_BPC),
     .gprDes_in(EX_muxR_next),.gprDes_out(M_last_gprDes),
     .aluOut_in(EX_aluResult_next),.aluOut_out(M_last_aluResult),
-    .gprB_in(EX_last_gprB_muxB),.gprB_out(M_last_gprB),
+    .gprB_in(forward_alu_final_in_B),.gprB_out(M_last_gprB),
     .zero_in(EX_aluZero_next),.zero_out(M_last_zero),
     .pcSel_in(EX_last_pcSel),.pcSel_out(M_last_pcSel),
     .nbranch_in(EX_last_nbranch),.nbranch_out(M_last_nbranch),
     .memR_in(EX_last_memR),.memR_out(M_last_memR),
     .memW_in(EX_last_memW),.memW_out(M_last_memW),
     .regW_in(EX_last_regW),.regW_out(M_last_regW),
-    .memToR_in(EX_last_memToR),.memToR_out(M_last_memToR)
+    .memToR_in(EX_last_memToR),.memToR_out(M_last_memToR),
+    .do_flush(1'b0)
     );
 
   // -------END EX-------------
@@ -304,8 +301,8 @@ module pipeMips (clock,reset);
 
   MEMWB P_MEMWB(
     .clk(clock),
-    .rst(reset | M_WB_clear),
-    .Write(pRegWrite & M_WB_lock),
+    .rst(reset),
+    .Write(pRegWrite),
     .gprDes_in(M_last_gprDes),.gprDes_out(WB_ID_gprWriteAddr),
     .aluOut_in(M_last_aluResult),.aluOut_out(WB_last_aluOut),
     .memOut_in(M_dmResult_next),.memOut_out(WB_last_memOut),
@@ -326,23 +323,14 @@ module pipeMips (clock,reset);
   // -----END WB---------------
 
   // BEYOND PIPELINE
-  assign IF_ID_lock = pipeLock[0];
-  assign ID_EX_lock = pipeLock[1];
-  assign EX_M_lock  = pipeLock[2];
-  assign M_WB_lock  = pipeLock[3];
 
-  assign IF_ID_clear =  pipeClear[0];
-  assign ID_EX_clear =  pipeClear[1];
-  assign EX_M_clear  =  pipeClear[2];
-  assign M_WB_clear  =  pipeClear[3];
-
-  pipeline_ctrl PIP_CTRL(
-    .branch(M_IF_doBranch),
-    .jump(ID_PC_jump),
-    .pipeline_lock(pipeLock),
-    .pipeline_clear(pipeClear),
-    .do_stall(STALL_do_stall)
-    );
+  //
+  // pipeline_ctrl PIP_CTRL(
+  //   .branch(M_IF_doBranch),
+  //   .jump(ID_PC_jump),
+  //   .pipeline_lock(),
+  //   .pipeline_clear(),
+  //   );
 
   Forwarding FORWARD(
     .EX_M_regWrite(M_last_regW),
@@ -362,6 +350,9 @@ module pipeMips (clock,reset);
     .ID_EX_rt(EX_last_rt_mux),
     .IF_ID_rs(ID_rs_gpr),
     .IF_ID_rt(ID_rt_gpr),
+    .IF_ID_memWrite(ID_memW_next),
+    .ID_EX_rd(EX_muxR_next),
+    .EX_M_rd(M_last_gprDes),
     .do_stall(STALL_do_stall)
     );
 

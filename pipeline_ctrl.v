@@ -3,12 +3,10 @@ module pipeline_ctrl (
   jump,
   pipeline_lock,
   pipeline_clear,
-  do_stall
   );
 
   input branch;
   input jump;
-  input do_stall;
 
   // output reg [3:0] pipeline_lock;
   // output reg [3:0] pipeline_clear;

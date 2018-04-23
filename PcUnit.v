@@ -25,7 +25,7 @@ module PcUnit(
 
 	output reg[31:0] PC;
 
-	wire selector = {PcSel,dojump};
+	wire [1:0] selector = {PcSel,dojump};
 	//将pcSel即branch信号与jump信号整合方便接下来选择分支
 	//其中有
 	// 00 -> NORMAL
@@ -43,6 +43,7 @@ module PcUnit(
 		if(PcReSet == 1)
 			PC <= 32'h0000_3000;
 
+		$display("[PC:GET CONTROL]:%b",selector);
 		case(selector)
 			2'b10:
 			begin

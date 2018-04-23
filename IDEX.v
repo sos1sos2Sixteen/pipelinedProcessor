@@ -20,14 +20,14 @@ module IDEX (
   Mread_in,Mread_out,
   RegWrite_in,RegWrite_out,
   MtoR_in,MtoR_out,
-  do_stall
+  do_flush
   );
 
 
   input clk;
   input rst;
   input Write;
-  input do_stall;
+  input do_flush;
 
 
   input [31:0] PC_in;
@@ -89,7 +89,29 @@ module IDEX (
 
 
   always @ ( negedge clk ) begin
-    if(Write)
+    if(do_flush)
+    begin
+      PC_mid = 0;
+      rd_mid = 0;
+      rt_mid = 0;
+      rs_mid = 0;
+      ext_mid = 0;
+      shamt_mid = 0;
+      gprA_mid = 0;
+      gprB_mid = 0;
+      RegDst_mid = 0;
+      ALUop_mid = 0;
+      ALUsrc_mid = 0;
+      AluShift_mid = 0;
+      Branch_mid = 0;
+      nbranch_mid = 0;
+      Mwrite_mid = 0;
+      Mread_mid = 0;
+      RegWrite_mid = 0;
+      MtoR_mid = 0;
+    end
+
+    else if(Write)
     begin
       PC_mid = PC_in;
       rd_mid = rd_in;
@@ -116,27 +138,7 @@ module IDEX (
   always @(posedge clk or posedge rst)
   begin
 
-    if(do_stall)
-    begin
-      PC_mid = 0;
-      rd_mid = 0;
-      rt_mid = 0;
-      rs_mid = 0;
-      ext_mid = 0;
-      shamt_mid = 0;
-      gprA_mid = 0;
-      gprB_mid = 0;
-      RegDst_mid = 0;
-      ALUop_mid = 0;
-      ALUsrc_mid = 0;
-      AluShift_mid = 0;
-      Branch_mid = 0;
-      nbranch_mid = 0;
-      Mwrite_mid = 0;
-      Mread_mid = 0;
-      RegWrite_mid = 0;
-      MtoR_mid = 0;
-    end
+
 
     if (rst)
     begin

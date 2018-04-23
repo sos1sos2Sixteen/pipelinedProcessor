@@ -45,7 +45,10 @@ module Alu(AluResult,Zero,DataIn1,DataIn2,AluCtrl);
 						end //end else
 					end //end for
 				end // end SRA
-	    default: ;
+	    default:
+				begin
+					AluResult = 32'b0;
+				end
 	  endcase
 
 	assign Zero = (AluResult == 0) ? 1 : 0;

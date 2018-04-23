@@ -11,11 +11,14 @@ module EXMEM (
   memR_in,memR_out,
   memW_in,memW_out,
   regW_in,regW_out,
-  memToR_in,memToR_out
+  memToR_in,memToR_out,
+  do_flush,
   );
 
 
   input clk,rst,Write;
+  input do_flush;
+
   input [31:0] BPC_in;
   input [4:0]  gprDes_in;
   input [31:0] aluOut_in;
@@ -53,9 +56,24 @@ module EXMEM (
   reg        memToR_mid;
 
 
-  always @ (negedge clk )
+  always @ (negedge clk)
   begin
-    if(Write)
+    if(do_flush)
+    begin
+      BPC_mid = 0;
+      gprDes_mid = 0;
+      aluOut_mid = 0;
+      gprB_mid  = 0;
+      zero_mid = 0;
+      pcSel_mid = 0;
+      nbranch_mid = 0;
+      memR_mid = 0;
+      memW_mid = 0;
+      regW_mid = 0;
+      memToR_mid = 0;
+
+    end //end if
+    else if(Write)
     begin
       BPC_mid = BPC_in;
       gprDes_mid = gprDes_in;
